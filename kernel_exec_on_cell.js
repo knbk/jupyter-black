@@ -134,15 +134,18 @@ define([
             indices = Jupyter.notebook.get_selected_cells_indices();
         }
         var kernel_config = this.get_kernel_config();
-        return indices.map(cell_index => {
-            let cell = Jupyter.notebook.get_cell(cell_index);
+        var promises = [];
+        for (var ii = 0; ii < indices.length; ii++) {
+            var cell_index = indices[ii];
+            var cell = Jupyter.notebook.get_cell(cell_index);
             if (!(cell instanceof CodeCell)) {
                 continue;
             }
             // IIFE because otherwise cell_index & cell are passed by reference
-            let callbacks = this.construct_cell_callbacks(cell_index, cell);
-            return this.autoformat_text(cell.get_text(), kernel_config).then(callbacks[0], callbacks[1]);
-        });
+            var callbacks = this.construct_cell_callbacks(cell_index, cell);
+            promises.push(this.autoformat_text(cell.get_text(), kernel_config).then(callbacks[0], callbacks[1]));
+        }
+        return promises;
     };
 
     KernelExecOnCells.prototype.autoformat_text = function(text, kernel_config) {
